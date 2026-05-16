@@ -8,7 +8,7 @@ env:
   AWS_REGION: eu-north-1
   ECR_REPOSITORY: fourteen-worker
   ECS_CLUSTER: genderize-cluster
-  ECS_SERVICE: fourteen-worker-service
+  ECS_SERVICE: vulnwatch-worker
   CONTAINER_NAME: fourteen-worker-container
   TASK_DEFINITION: fourteen-worker-task
 
