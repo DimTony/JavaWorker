@@ -1,0 +1,48 @@
+{
+  "family": "fourteen-worker-task",
+  "executionRoleArn": "arn:aws:iam::012834916544:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "fourteen-worker-container",
+      "image": "012834916544.dkr.ecr.eu-north-1.amazonaws.com/fourteen-worker:latest",
+      "cpu": 0,
+      "essential": true,
+      "environment": [
+        {
+          "name": "REDIS_PORT",
+          "value": "6379"
+        },
+        { "name": "REDIS_QUEUE", "value": "jobs" },
+        { "name": "WORKER_THREADS", "value": "4" },
+        { "name": "WORKER_BLPOP_TIMEOUT", "value": "5" }
+      ],
+      "secrets": [
+        {
+          "name": "REDIS_HOST",
+          "value": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ConnectionStrings__RedisConnection"
+        },
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "value": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ANTHROPIC__KEY"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/fourteen-worker",
+          "awslogs-create-group": "true",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
