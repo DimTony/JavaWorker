@@ -27,11 +27,11 @@
       "secrets": [
         {
           "name": "REDIS_HOST",
-          "value": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ConnectionStrings__RedisConnection"
+          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ConnectionStrings__RedisConnection"
         },
         {
           "name": "ANTHROPIC_API_KEY",
-          "value": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ANTHROPIC__KEY"
+          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ANTHROPIC__KEY"
         }
       ],
       "logConfiguration": {
