@@ -5,7 +5,6 @@ import com.owlite.worker.config.AppConfig;
 import com.owlite.worker.config.RedisConfig;
 import com.owlite.worker.model.Job;
 import com.owlite.worker.processor.JobProcessor;
-import redis.clients.jedis.Jedis;
 
 import java.util.List;
 import java.util.Map;
@@ -22,19 +21,23 @@ public class QueueListener implements Runnable {
 
     public QueueListener(Map<String, JobProcessor> processors) {
         this.processors = processors;
-        this.executor = Executors.newVirtualThreadPerTaskExecutor(); // Java 21
+        this.executor = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     @Override
     public void run() {
         System.out.println("Listening on queue: " + queueName);
-        try (Jedis jedis = RedisConfig.getPool().getResource()) {
-            while (running) {
-                List<String> result = jedis.blpop(blpopTimeout, queueName);
-                if (result == null) continue; // timeout, loop again
-
+        while (running) {
+            try {
+                // JedisPooled manages the pool internally — no try-with-resource needed
+                List<String> result = RedisConfig.getClient().blpop(blpopTimeout, queueName);
+                if (result == null) continue;
                 String payload = result.get(1);
                 executor.submit(() -> handle(payload));
+            } catch (Exception e) {
+                System.err.println("Listener error: " + e.getMessage());
+                // brief pause before retrying to avoid tight error loops
+                try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
             }
         }
     }
