@@ -13,7 +13,8 @@ import java.util.Map;
 public class AiEnricher {
 
     private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String MODEL = "llama-3.1-8b-instant";
+    private static final String FINDINGS_MODEL = "llama-3.3-70b-versatile";
+    private static final String DESCRIPTION_MODEL = "llama-3.1-8b-instant";
     private final OkHttpClient http = new OkHttpClient();
     private final String apiKey = System.getenv("GROQ_API_KEY");
     private final ObjectMapper mapper = JsonMapper.builder()
@@ -25,7 +26,7 @@ public class AiEnricher {
             String prompt = buildGeneratorPrompt(job);
 
             Map<String, Object> body = Map.of(
-                    "model", MODEL,
+                    "model", FINDINGS_MODEL,
                     "max_tokens", 1500,
                     "messages", List.of(
                             Map.of("role", "user", "content", prompt)));
@@ -103,7 +104,7 @@ public class AiEnricher {
     public String describe(ScanJob job) {
         try {
             Map<String, Object> body = Map.of(
-                    "model", MODEL,
+                    "model", DESCRIPTION_MODEL,
                     "max_tokens", 200,
                     "messages", List.of(
                             Map.of("role", "user", "content", buildPrompt(job))));

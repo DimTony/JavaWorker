@@ -14,6 +14,10 @@ public class DbConfig {
         if (url == null || username == null || password == null)
             throw new IllegalStateException("DB_URL, DB_USERNAME or DB_PASSWORD not set.");
 
+        // ensure jdbc prefix is present
+        if (!url.startsWith("jdbc:postgresql://"))
+            url = "jdbc:postgresql://" + url;
+
         return DriverManager.getConnection(url, username, password);
     }
 }
