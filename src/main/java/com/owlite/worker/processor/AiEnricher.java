@@ -54,8 +54,10 @@ public class AiEnricher {
                 Map<?, ?> message = (Map<?, ?>) first.get("message");
                 String content = (String) message.get("content");
 
-                // strip markdown code fences if present
-                content = content.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
+                System.out.println("Raw findings content: " + content); // log before parsing
+
+                content = extractJsonArray(content);
+                System.out.println("Cleaned findings content: " + content);
 
                 Finding[] findings = mapper.readValue(content, Finding[].class);
                 return List.of(findings);
@@ -65,6 +67,19 @@ public class AiEnricher {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    private String extractJsonArray(String raw) {
+        // strip markdown fences
+        raw = raw.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
+
+        // extract just the JSON array — everything between first [ and last ]
+        int start = raw.indexOf('[');
+        int end = raw.lastIndexOf(']');
+        if (start == -1 || end == -1 || end <= start)
+            throw new IllegalArgumentException("No JSON array found in response");
+
+        return raw.substring(start, end + 1);
     }
 
     public String describe(ScanJob job) {
@@ -107,36 +122,25 @@ public class AiEnricher {
     }
 
     private String buildGeneratorPrompt(ScanJob job) {
-        return String.format("""
-            You are a security scanner. Generate exactly 4 realistic but fictional vulnerability findings
-            for the domain "%s". Return ONLY a valid JSON array, no explanation, no markdown, no code fences.
+        return String.format(
+                """
+                        Generate exactly 4 fictional vulnerability findings for domain "%s" as a JSON array.
 
-            Rules:
-            - surface must be one of: Dns, Ssl, HttpHeaders
-            - severity must be one of: Critical, High, Medium, Low
-            - include at least one finding per surface type
-            - cveId can be null or a realistic CVE id like "CVE-2023-1234"
-            - all string fields must be non-null except cveId
-            - scanId must be "%s" for all findings
+                        CRITICAL RULES:
+                        - Return ONLY the JSON array. No text before or after it. No markdown. No code fences.
+                        - Do NOT use apostrophes or contractions in any string value (write "does not" not "doesn't")
+                        - surface must be exactly one of: Dns, Ssl, HttpHeaders
+                        - severity must be exactly one of: Critical, High, Medium, Low
+                        - include at least one finding for each surface type
+                        - cveId must be null or a string like "CVE-2023-1234"
+                        - scanId must be "%s" for every finding
 
-            Return this exact shape:
-            [
-              {
-                "scanId": "%s",
-                "surface": "Ssl",
-                "severity": "High",
-                "title": "Weak TLS version detected",
-                "cveId": "CVE-2021-3711",
-                "aiExplanation": "The server supports TLS 1.0 which is deprecated...",
-                "technicalPayload": "TLS version: 1.0, Cipher: RC4-SHA",
-                "remediationSteps": "Disable TLS 1.0 and 1.1. Enforce TLS 1.2 minimum."
-              }
-            ]
-            """,
-            job.domainName(),
-            job.scanId(),
-            job.scanId()
-        );
+                        Required JSON shape (return an array of exactly this structure):
+                        [{"scanId":"%s","surface":"Ssl","severity":"High","title":"...","cveId":null,"aiExplanation":"...","technicalPayload":"...","remediationSteps":"..."}]
+                        """,
+                job.domainName(),
+                job.scanId(),
+                job.scanId());
     }
 
     private String buildPrompt(ScanJob job) {
