@@ -1,10 +1,12 @@
 package com.owlite.worker.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record ScanJob(
-    String domainId,
-    String domainName,
-    String scanId,
-    String scanType,
-    String requestedBy,
-    String enqueuedAt
+    @JsonProperty("DomainId")     String domainId,
+    @JsonProperty("DomainName")   String domainName,
+    @JsonProperty("ScanId")       String scanId,
+    @JsonProperty("ScanType")     String scanType,
+    @JsonProperty("RequestedBy")  String requestedBy,
+    @JsonProperty("EnqueuedAt")   String enqueuedAt
 ) {}
