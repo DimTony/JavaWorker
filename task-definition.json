@@ -27,7 +27,7 @@
       "secrets": [
         {
           "name": "REDIS_HOST",
-          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ConnectionStrings__RedisConnection"
+          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ConnectionStrings__JavaRedis"
         },
         {
           "name": "ANTHROPIC_API_KEY",
