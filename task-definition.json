@@ -20,7 +20,7 @@
           "name": "REDIS_PORT",
           "value": "6379"
         },
-        { "name": "REDIS_QUEUE", "value": "jobs" },
+        { "name": "REDIS_QUEUE", "value": "scan-jobs" },
         { "name": "WORKER_THREADS", "value": "4" },
         { "name": "WORKER_BLPOP_TIMEOUT", "value": "5" }
       ],

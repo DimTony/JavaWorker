@@ -3,7 +3,7 @@ package com.owlite.worker.listener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.owlite.worker.config.AppConfig;
 import com.owlite.worker.config.RedisConfig;
-import com.owlite.worker.model.Job;
+import com.owlite.worker.model.ScanJob;
 import com.owlite.worker.processor.JobProcessor;
 
 import java.util.List;
@@ -44,10 +44,10 @@ public class QueueListener implements Runnable {
 
     private void handle(String raw) {
         try {
-            Job job = mapper.readValue(raw, Job.class);
-            JobProcessor processor = processors.get(job.type());
+            ScanJob job = mapper.readValue(raw, ScanJob.class);
+            JobProcessor processor = processors.get(job.scanType());
             if (processor == null) {
-                System.err.println("No processor for job type: " + job.type());
+                System.err.println("No processor for job type: " + job.scanType());
                 return;
             }
             processor.process(job);

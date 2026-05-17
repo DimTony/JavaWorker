@@ -1,7 +1,7 @@
 package com.owlite.worker.processor;
 
-import com.owlite.worker.model.Job;
+import com.owlite.worker.model.ScanJob;
 
 public interface JobProcessor {
-    void process(Job job);
+    void process(ScanJob job);
 }
