@@ -20,25 +20,30 @@ public class AiEnricher {
             String prompt = buildPrompt(job);
 
             Map<String, Object> body = Map.of(
-                "model", MODEL,
-                "max_tokens", 200,
-                "messages", List.of(
-                    Map.of("role", "user", "content", prompt)
-                )
-            );
+                    "model", MODEL,
+                    "max_tokens", 200,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)));
 
             Request request = new Request.Builder()
-                .url(API_URL)
-                .post(RequestBody.create(
-                    mapper.writeValueAsString(body),
-                    MediaType.parse("application/json")))
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", "2023-06-01")
-                .header("content-type", "application/json")
-                .build();
+                    .url(API_URL)
+                    .post(RequestBody.create(
+                            mapper.writeValueAsString(body),
+                            MediaType.parse("application/json")))
+                    .header("x-api-key", apiKey)
+                    .header("anthropic-version", "2023-06-01")
+                    .header("content-type", "application/json")
+                    .build();
 
             try (Response response = http.newCall(request).execute()) {
                 String responseBody = response.body().string();
+                System.out.printf("Anthropic response [%d]: %s%n", response.code(), responseBody); // add this
+
+                if (!response.isSuccessful()) {
+                    System.err.println("Anthropic API error: " + response.code());
+                    return null;
+                }
+
                 Map<?, ?> parsed = mapper.readValue(responseBody, Map.class);
                 List<?> content = (List<?>) parsed.get("content");
                 Map<?, ?> first = (Map<?, ?>) content.get(0);
@@ -46,27 +51,27 @@ public class AiEnricher {
             }
         } catch (Exception e) {
             System.err.println("Failed to generate scan description: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
 
     private String buildPrompt(ScanJob job) {
         return String.format("""
-            Write a single friendly sentence describing this vulnerability scan to the user who requested it.
-            Be concise and human-readable. Do not use technical jargon.
+                Write a single friendly sentence describing this vulnerability scan to the user who requested it.
+                Be concise and human-readable. Do not use technical jargon.
 
-            Details:
-            - Domain: %s
-            - Scan type: %s
-            - Requested at: %s
-            - Scan ID: %s
+                Details:
+                - Domain: %s
+                - Scan type: %s
+                - Requested at: %s
+                - Scan ID: %s
 
-            Example: "You have initiated a scan for tonydim.site, requested on 17th May 2026 at 10:11 AM."
-            """,
-            job.domainName(),
-            job.scanType(),
-            job.enqueuedAt(),
-            job.scanId()
-        );
+                Example: "You have initiated a scan for tonydim.site, requested on 17th May 2026 at 10:11 AM."
+                """,
+                job.domainName(),
+                job.scanType(),
+                job.enqueuedAt(),
+                job.scanId());
     }
 }
