@@ -34,8 +34,8 @@
           "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/ANTHROPIC__KEY"
         },
         {
-          "name": "GEMINI_API_KEY",
-          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/GEMINI_API_KEY"
+          "name": "GROQ_API_KEY",
+          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/GROQ_API_KEY"
         }
       ],
       "logConfiguration": {
