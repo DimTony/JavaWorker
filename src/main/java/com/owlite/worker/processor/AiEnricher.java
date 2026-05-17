@@ -1,6 +1,9 @@
 package com.owlite.worker.processor;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.owlite.worker.model.Finding;
 import com.owlite.worker.model.ScanJob;
 import okhttp3.*;
 
@@ -10,10 +13,59 @@ import java.util.Map;
 public class AiEnricher {
 
     private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String MODEL = "llama-3.1-8b-instant"; // free, fast
+    private static final String MODEL = "llama-3.1-8b-instant";
     private final OkHttpClient http = new OkHttpClient();
-    private final ObjectMapper mapper = new ObjectMapper();
     private final String apiKey = System.getenv("GROQ_API_KEY");
+    private final ObjectMapper mapper = JsonMapper.builder()
+            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+            .build();
+
+    public List<Finding> generate(ScanJob job) {
+        try {
+            String prompt = buildGeneratorPrompt(job);
+
+            Map<String, Object> body = Map.of(
+                    "model", MODEL,
+                    "max_tokens", 1500,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)));
+
+            Request request = new Request.Builder()
+                    .url(API_URL)
+                    .post(RequestBody.create(
+                            mapper.writeValueAsString(body),
+                            MediaType.parse("application/json")))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .build();
+
+            try (Response response = http.newCall(request).execute()) {
+                String responseBody = response.body().string();
+                System.out.printf("Groq findings response [%d]%n", response.code());
+
+                if (!response.isSuccessful()) {
+                    System.err.println("Groq API error: " + response.code() + " " + responseBody);
+                    return List.of();
+                }
+
+                Map<?, ?> parsed = mapper.readValue(responseBody, Map.class);
+                List<?> choices = (List<?>) parsed.get("choices");
+                Map<?, ?> first = (Map<?, ?>) choices.get(0);
+                Map<?, ?> message = (Map<?, ?>) first.get("message");
+                String content = (String) message.get("content");
+
+                // strip markdown code fences if present
+                content = content.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
+
+                Finding[] findings = mapper.readValue(content, Finding[].class);
+                return List.of(findings);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to generate findings: " + e.getMessage());
+            e.printStackTrace();
+            return List.of();
+        }
+    }
 
     public String describe(ScanJob job) {
         try {
@@ -52,6 +104,39 @@ public class AiEnricher {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private String buildGeneratorPrompt(ScanJob job) {
+        return String.format("""
+            You are a security scanner. Generate exactly 4 realistic but fictional vulnerability findings
+            for the domain "%s". Return ONLY a valid JSON array, no explanation, no markdown, no code fences.
+
+            Rules:
+            - surface must be one of: Dns, Ssl, HttpHeaders
+            - severity must be one of: Critical, High, Medium, Low
+            - include at least one finding per surface type
+            - cveId can be null or a realistic CVE id like "CVE-2023-1234"
+            - all string fields must be non-null except cveId
+            - scanId must be "%s" for all findings
+
+            Return this exact shape:
+            [
+              {
+                "scanId": "%s",
+                "surface": "Ssl",
+                "severity": "High",
+                "title": "Weak TLS version detected",
+                "cveId": "CVE-2021-3711",
+                "aiExplanation": "The server supports TLS 1.0 which is deprecated...",
+                "technicalPayload": "TLS version: 1.0, Cipher: RC4-SHA",
+                "remediationSteps": "Disable TLS 1.0 and 1.1. Enforce TLS 1.2 minimum."
+              }
+            ]
+            """,
+            job.domainName(),
+            job.scanId(),
+            job.scanId()
+        );
     }
 
     private String buildPrompt(ScanJob job) {
