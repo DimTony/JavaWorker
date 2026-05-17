@@ -18,21 +18,19 @@ public class AiEnricher {
     public String describe(ScanJob job) {
         try {
             Map<String, Object> body = Map.of(
-                "model", MODEL,
-                "max_tokens", 200,
-                "messages", List.of(
-                    Map.of("role", "user", "content", buildPrompt(job))
-                )
-            );
+                    "model", MODEL,
+                    "max_tokens", 200,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", buildPrompt(job))));
 
             Request request = new Request.Builder()
-                .url(API_URL)
-                .post(RequestBody.create(
-                    mapper.writeValueAsString(body),
-                    MediaType.parse("application/json")))
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .build();
+                    .url(API_URL)
+                    .post(RequestBody.create(
+                            mapper.writeValueAsString(body),
+                            MediaType.parse("application/json")))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .build();
 
             try (Response response = http.newCall(request).execute()) {
                 String responseBody = response.body().string();
@@ -57,22 +55,35 @@ public class AiEnricher {
     }
 
     private String buildPrompt(ScanJob job) {
-        return String.format("""
-            Write a single friendly sentence describing this vulnerability scan to the user who requested it.
-            Be concise and human-readable. Do not use technical jargon.
+        return String.format(
+                """
+                        You are a cybersecurity assistant helping a user understand a vulnerability scan they just initiated.
 
-            Details:
-            - Domain: %s
-            - Scan type: %s
-            - Requested at: %s
-            - Scan ID: %s
+                        Generate a short but informative response (2–4 sentences) that:
+                        - sounds natural and professional
+                        - explains what the scan is doing in plain English
+                        - briefly mentions what kinds of issues may be checked
+                        - reassures the user that results will be available after analysis
+                        - avoids heavy technical jargon
+                        - does NOT invent findings or vulnerabilities
+                        - does NOT use bullet points
 
-            Example: "You have initiated a scan for tonydim.site, requested on 17th May 2026 at 10:11 AM."
-            """,
-            job.domainName(),
-            job.scanType(),
-            job.enqueuedAt(),
-            job.scanId()
-        );
+                        Scan Details:
+                        - Domain: %s
+                        - Scan type: %s
+                        - Requested at: %s
+                        - Scan ID: %s
+
+                        The response should feel intelligent, helpful, and conversational, like a modern AI security platform.
+
+                        Example style:
+                        "Your security scan for tonydim.site is now underway. The system will analyze the domain for potential weaknesses, exposed services, and common security risks associated with the selected scan type. Once the analysis is complete, you'll receive a detailed breakdown of any findings and recommended next steps."
+
+                        Generate the response now.
+                        """,
+                job.domainName(),
+                job.scanType(),
+                job.enqueuedAt(),
+                job.scanId());
     }
 }
