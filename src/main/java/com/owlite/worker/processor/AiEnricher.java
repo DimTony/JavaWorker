@@ -9,45 +9,46 @@ import java.util.Map;
 
 public class AiEnricher {
 
-    private static final String API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String MODEL = "claude-haiku-4-5-20251001"; // cheapest
+    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
     private final OkHttpClient http = new OkHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
-    private final String apiKey = System.getenv("ANTHROPIC_API_KEY");
+    private final String apiKey = System.getenv("GEMINI_API_KEY");
 
     public String describe(ScanJob job) {
         try {
-            String prompt = buildPrompt(job);
-
             Map<String, Object> body = Map.of(
-                    "model", MODEL,
-                    "max_tokens", 200,
-                    "messages", List.of(
-                            Map.of("role", "user", "content", prompt)));
+                "contents", List.of(
+                    Map.of("parts", List.of(
+                        Map.of("text", buildPrompt(job))
+                    ))
+                )
+            );
+
+            String url = API_URL + "?key=" + apiKey;
 
             Request request = new Request.Builder()
-                    .url(API_URL)
-                    .post(RequestBody.create(
-                            mapper.writeValueAsString(body),
-                            MediaType.parse("application/json")))
-                    .header("x-api-key", apiKey)
-                    .header("anthropic-version", "2023-06-01")
-                    .header("content-type", "application/json")
-                    .build();
+                .url(url)
+                .post(RequestBody.create(
+                    mapper.writeValueAsString(body),
+                    MediaType.parse("application/json")))
+                .build();
 
             try (Response response = http.newCall(request).execute()) {
                 String responseBody = response.body().string();
-                System.out.printf("Anthropic response [%d]: %s%n", response.code(), responseBody); // add this
+                System.out.printf("Gemini response [%d]: %s%n", response.code(), responseBody);
 
                 if (!response.isSuccessful()) {
-                    System.err.println("Anthropic API error: " + response.code());
+                    System.err.println("Gemini API error: " + response.code());
                     return null;
                 }
 
                 Map<?, ?> parsed = mapper.readValue(responseBody, Map.class);
-                List<?> content = (List<?>) parsed.get("content");
-                Map<?, ?> first = (Map<?, ?>) content.get(0);
-                return (String) first.get("text");
+                List<?> candidates = (List<?>) parsed.get("candidates");
+                Map<?, ?> first = (Map<?, ?>) candidates.get(0);
+                Map<?, ?> content = (Map<?, ?>) first.get("content");
+                List<?> parts = (List<?>) content.get("parts");
+                Map<?, ?> part = (Map<?, ?>) parts.get(0);
+                return (String) part.get("text");
             }
         } catch (Exception e) {
             System.err.println("Failed to generate scan description: " + e.getMessage());
@@ -58,20 +59,21 @@ public class AiEnricher {
 
     private String buildPrompt(ScanJob job) {
         return String.format("""
-                Write a single friendly sentence describing this vulnerability scan to the user who requested it.
-                Be concise and human-readable. Do not use technical jargon.
+            Write a single friendly sentence describing this vulnerability scan to the user who requested it.
+            Be concise and human-readable. Do not use technical jargon.
 
-                Details:
-                - Domain: %s
-                - Scan type: %s
-                - Requested at: %s
-                - Scan ID: %s
+            Details:
+            - Domain: %s
+            - Scan type: %s
+            - Requested at: %s
+            - Scan ID: %s
 
-                Example: "You have initiated a scan for tonydim.site, requested on 17th May 2026 at 10:11 AM."
-                """,
-                job.domainName(),
-                job.scanType(),
-                job.enqueuedAt(),
-                job.scanId());
+            Example: "You have initiated a scan for tonydim.site, requested on 17th May 2026 at 10:11 AM."
+            """,
+            job.domainName(),
+            job.scanType(),
+            job.enqueuedAt(),
+            job.scanId()
+        );
     }
 }
