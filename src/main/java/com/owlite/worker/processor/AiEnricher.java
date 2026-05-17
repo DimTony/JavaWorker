@@ -70,16 +70,34 @@ public class AiEnricher {
     }
 
     private String extractJsonArray(String raw) {
-        // strip markdown fences
         raw = raw.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
 
-        // extract just the JSON array — everything between first [ and last ]
         int start = raw.indexOf('[');
-        int end = raw.lastIndexOf(']');
-        if (start == -1 || end == -1 || end <= start)
+        if (start == -1)
             throw new IllegalArgumentException("No JSON array found in response");
 
-        return raw.substring(start, end + 1);
+        raw = raw.substring(start);
+
+        int end = raw.lastIndexOf(']');
+
+        if (end == -1) {
+            // model cut off — repair
+            raw = raw.stripTrailing();
+
+            if (raw.endsWith(","))
+                raw = raw.substring(0, raw.length() - 1);
+
+            if (!raw.endsWith("}"))
+                raw = raw + "}";
+
+            raw = raw + "]";
+
+            System.out.println("Warning: repaired unclosed JSON array from model response");
+        } else {
+            raw = raw.substring(0, end + 1);
+        }
+
+        return raw;
     }
 
     public String describe(ScanJob job) {
