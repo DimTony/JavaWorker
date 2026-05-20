@@ -48,6 +48,10 @@
         {
           "name": "GROQ_API_KEY",
           "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/GROQ_API_KEY"
+        },
+        {
+          "name": "GROK_API_KEY",
+          "valueFrom": "arn:aws:ssm:eu-north-1:012834916544:parameter/fourteen/production/GROK_API_KEY"
         }
       ],
       "logConfiguration": {

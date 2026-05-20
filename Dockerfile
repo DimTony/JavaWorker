@@ -15,4 +15,4 @@ COPY --from=build /app/target/redis-worker-1.0.0.jar app.jar
 RUN addgroup -S worker && adduser -S worker -G worker
 USER worker
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "--enable-preview", "-jar", "app.jar"]
