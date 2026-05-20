@@ -7,6 +7,7 @@ public record ScanJob(
     @JsonProperty("DomainName")   String domainName,
     @JsonProperty("ScanId")       String scanId,
     @JsonProperty("ScanType")     String scanType,
+    @JsonProperty("SurfaceType") String surfaceType,
     @JsonProperty("RequestedBy")  String requestedBy,
     @JsonProperty("EnqueuedAt")   String enqueuedAt
 ) {}
