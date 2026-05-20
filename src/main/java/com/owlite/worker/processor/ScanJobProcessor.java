@@ -1,6 +1,7 @@
 package com.owlite.worker.processor;
 
 import com.owlite.worker.ai.AiEnricher;
+import com.owlite.worker.ai.GeminiAiEnricher;
 import com.owlite.worker.engine.ParallelScanner;
 import com.owlite.worker.model.*;
 import com.owlite.worker.publisher.ScanResultPublisher;
@@ -12,7 +13,7 @@ import java.util.List;
 public class ScanJobProcessor implements JobProcessor {
 
     private final ParallelScanner           scanner     = new ParallelScanner();
-    private final AiEnricher              enricher    = new AiEnricher();
+    private final GeminiAiEnricher          enricher    = new GeminiAiEnricher();
     private final FindingPersistenceService persistence = new FindingPersistenceService();
     private final ScanResultPublisher       publisher   = new ScanResultPublisher();
 
